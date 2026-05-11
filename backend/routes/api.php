@@ -50,6 +50,9 @@ Route::middleware(['jwt', 'auth.custom'])->group(function () {
             Route::post('subscriptions/{tenantSubscription}/renew', [SubscriptionController::class, 'renew']);
             Route::post('subscriptions/{tenantSubscription}/cancel', [SubscriptionController::class, 'cancel']);
             Route::post('subscriptions/{tenantSubscription}/change-plan', [SubscriptionController::class, 'changePlan']);
+            Route::post('subscriptions/{tenantSubscription}/pause', [SubscriptionController::class, 'pause']);
+            Route::post('subscriptions/{tenantSubscription}/resume', [SubscriptionController::class, 'resume']);
+            Route::post('subscriptions/{tenantSubscription}/suspend', [SubscriptionController::class, 'suspend']);
 
             Route::get('coupons', [CouponController::class, 'index']);
             Route::post('coupons', [CouponController::class, 'store']);

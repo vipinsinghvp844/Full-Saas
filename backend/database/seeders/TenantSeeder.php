@@ -32,6 +32,11 @@ class TenantSeeder extends Seeder
             ]
         );
 
+        // Ensure tenant always has a valid owner user for API consistency
+        $tenant->update([
+            'owner_user_id' => $adminUser->id,
+        ]);
+
         $adminRole = Role::where('tenant_id', $tenant->id)
             ->where('name', 'Gym Admin')
             ->first();

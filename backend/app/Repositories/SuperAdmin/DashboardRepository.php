@@ -34,15 +34,47 @@ class DashboardRepository
                 ->whereYear('created_at', $now->year)
                 ->sum('amount'),
             'active_subscriptions' => TenantSubscription::query()
-                ->where('status', 'active')
-                ->whereDate('end_date', '>=', $now->toDateString())
+                ->whereIn('status', ['active', 'trial'])
+                ->where(function ($query) use ($now) {
+                    $query->whereDate('end_date', '>=', $now->toDateString())
+                          ->orWhere(function ($q) {
+                              $q->where('status', 'expired')
+                                ->where('grace_period_ends_at', '>', $now);
+                          });
+                })
                 ->count(),
             'expired_subscriptions' => TenantSubscription::query()
                 ->where(function ($query) use ($now) {
                     $query->where('status', 'expired')
-                        ->orWhereDate('end_date', '<', $now->toDateString());
+                          ->where(function ($q) use ($now) {
+                              $q->whereNull('grace_period_ends_at')
+                                ->orWhere('grace_period_ends_at', '<=', $now);
+                          })
+                          ->orWhereDate('end_date', '<', $now->toDateString());
                 })
                 ->count(),
+            'trial_subscriptions' => TenantSubscription::where('status', 'trial')->count(),
+            'cancelled_subscriptions' => TenantSubscription::where('status', 'cancelled')->count(),
+            'suspended_subscriptions' => TenantSubscription::where('status', 'suspended')->count(),
+            'paused_subscriptions' => TenantSubscription::where('status', 'paused')->count(),
+            'total_subscriptions' => TenantSubscription::count(),
+            'monthly_recurring_revenue' => (float) TenantSubscription::query()
+                ->whereIn('status', ['active', 'trial'])
+                ->where(function ($query) use ($now) {
+                    $query->whereDate('end_date', '>=', $now->toDateString())
+                          ->orWhere(function ($q) {
+                              $q->where('status', 'expired')
+                                ->where('grace_period_ends_at', '>', $now);
+                          });
+                })
+                ->sum('final_amount'),
+            'renewals_this_month' => TenantSubscription::query()
+                ->whereYear('updated_at', $now->year)
+                ->whereMonth('updated_at', $now->month)
+                ->where('status', 'active')
+                ->whereDate('end_date', '>', $now->toDateString())
+                ->count(),
+            'churn_rate' => $this->calculateChurnRate(),
         ];
     }
 
@@ -119,6 +151,33 @@ class DashboardRepository
             ->pluck('total', 'status')
             ->map(fn ($value) => (int) $value)
             ->all();
+    }
+
+    protected function calculateChurnRate(): float
+    {
+        $now = Carbon::now();
+        $lastMonth = $now->copy()->subMonth();
+
+        $activeLastMonth = TenantSubscription::query()
+            ->where('created_at', '<=', $lastMonth->endOfMonth())
+            ->where(function ($query) use ($lastMonth) {
+                $query->where('status', 'active')
+                      ->orWhere(function ($q) use ($lastMonth) {
+                          $q->where('status', 'expired')
+                            ->where('grace_period_ends_at', '>', $lastMonth->endOfMonth());
+                      });
+            })
+            ->count();
+
+        $cancelledThisMonth = TenantSubscription::query()
+            ->whereBetween('cancelled_at', [$lastMonth->startOfMonth(), $lastMonth->endOfMonth()])
+            ->count();
+
+        if ($activeLastMonth === 0) {
+            return 0.0;
+        }
+
+        return round(($cancelledThisMonth / $activeLastMonth) * 100, 2);
     }
 
     protected function monthlySeries($baseQuery, string $column, int $months, callable $aggregator): array

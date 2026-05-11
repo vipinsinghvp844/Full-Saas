@@ -11,34 +11,26 @@ class SubscriptionResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'status' => $this->status, // active, expired, paused, trial
+            'status_label' => ucfirst($this->status),
+            'payment_status' => $this->payment_status, // paid, pending, failed
+            'final_amount' => round((float) ($this->final_amount ?? 0.0), 2),
+            
+            // Standardized Dates
+            'start_date' => $this->start_date ? $this->start_date->toDateString() : null,
+            'end_date' => $this->end_date ? $this->end_date->toDateString() : null,
+            'renewal_date' => $this->renewal_date ? $this->renewal_date->toDateString() : null,
+            'next_billing_date' => $this->next_billing_date ? $this->next_billing_date->toDateString() : null,
+            
+            // Relationships
             'tenant' => [
                 'id' => $this->tenant?->id,
                 'name' => $this->tenant?->name,
-                'status' => $this->tenant?->status,
-                'owner_name' => $this->tenant?->owner?->name,
-                'owner_email' => $this->tenant?->owner?->email,
+                'email' => $this->tenant?->email,
             ],
-            'plan' => [
-                'id' => $this->plan?->id,
-                'name' => $this->plan?->name,
-                'plan_type' => $this->plan?->plan_type,
-                'price' => $this->plan?->price,
-            ],
-            'coupon' => $this->coupon ? [
-                'id' => $this->coupon->id,
-                'code' => $this->coupon->code,
-                'discount_type' => $this->coupon->discount_type,
-                'discount_value' => $this->coupon->discount_value,
-            ] : null,
-            'start_date' => $this->start_date?->toDateString(),
-            'end_date' => $this->end_date?->toDateString(),
-            'status' => $this->status,
-            'price' => $this->price,
-            'discount_amount' => $this->discount_amount,
-            'final_amount' => $this->final_amount,
-            'payment_method' => $this->payment_method,
-            'cancelled_at' => $this->cancelled_at?->toDateTimeString(),
-            'is_expired' => $this->end_date?->isPast() ?? false,
+            'plan' => new PlanResource($this->whenLoaded('plan')),
+            
+            // Metadata
             'created_at' => $this->created_at?->toDateTimeString(),
             'updated_at' => $this->updated_at?->toDateTimeString(),
         ];

@@ -11,6 +11,7 @@ use App\Models\Tenant;
 use App\Repositories\SuperAdmin\GymRepository;
 use App\Services\SuperAdmin\GymService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class GymController extends ApiController
 {
@@ -26,7 +27,9 @@ class GymController extends ApiController
         $payload = $this->paginatedData($paginator, GymResource::class);
         $payload['filters'] = [
             'plans' => PlatformPlan::query()->where('status', 'active')->orderBy('name')->get(['id', 'name']),
-            'countries' => Tenant::query()->whereNotNull('country')->distinct()->orderBy('country')->pluck('country'),
+            'countries' => Schema::hasColumn('tenants', 'country')
+                ? Tenant::query()->whereNotNull('country')->distinct()->orderBy('country')->pluck('country')
+                : collect(),
         ];
 
         return $this->jsonResponse($payload, 200, $request);

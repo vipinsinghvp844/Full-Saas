@@ -84,8 +84,40 @@ class SubscriptionController extends ApiController
         $updated->load(['tenant.owner', 'plan', 'coupon']);
 
         return $this->jsonResponse([
-            'message' => 'Subscription updated successfully.',
-            'data' => $this->resourceData(new SubscriptionResource($updated)),
+            'message' => 'Subscription updated successfully.',            'data' => $this->resourceData(new SubscriptionResource($updated)),
+        ], 200, $request);
+    }
+
+    public function pause(Request $request, TenantSubscription $tenantSubscription)
+    {
+        $tenantSubscription->pause();
+        $tenantSubscription->load(['tenant.owner', 'plan', 'coupon']);
+
+        return $this->jsonResponse([
+            'message' => 'Subscription paused successfully.',
+            'data' => $this->resourceData(new SubscriptionResource($tenantSubscription)),
+        ], 200, $request);
+    }
+
+    public function resume(Request $request, TenantSubscription $tenantSubscription)
+    {
+        $tenantSubscription->resume();
+        $tenantSubscription->load(['tenant.owner', 'plan', 'coupon']);
+
+        return $this->jsonResponse([
+            'message' => 'Subscription resumed successfully.',
+            'data' => $this->resourceData(new SubscriptionResource($tenantSubscription)),
+        ], 200, $request);
+    }
+
+    public function suspend(Request $request, TenantSubscription $tenantSubscription)
+    {
+        $tenantSubscription->suspend();
+        $tenantSubscription->load(['tenant.owner', 'plan', 'coupon']);
+
+        return $this->jsonResponse([
+            'message' => 'Subscription suspended successfully.',
+            'data' => $this->resourceData(new SubscriptionResource($tenantSubscription)),
         ], 200, $request);
     }
 }
