@@ -24,10 +24,14 @@ class MemberFactory extends Factory
         return [
             'tenant_id' => Tenant::factory(),
             'user_id' => User::factory(),
-            'date_of_birth' => fake()->date(),
+            'assigned_trainer_id' => null,
+            'phone' => fake()->phoneNumber(),
             'gender' => fake()->randomElement(['male', 'female', 'other']),
+            'date_of_birth' => fake()->date(),
+            'address' => fake()->address(),
             'emergency_contact' => fake()->phoneNumber(),
-            'membership_status' => fake()->randomElement(['active', 'inactive', 'expired', 'suspended']),
+            'joining_date' => fake()->date(),
+            'status' => fake()->randomElement(['active', 'inactive', 'suspended']),
             'created_by' => null,
             'updated_by' => null,
         ];

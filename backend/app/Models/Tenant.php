@@ -16,12 +16,15 @@ class Tenant extends Model
         'email',
         'owner_user_id',
         'phone',
+        'website',
         'address',
         'city',
         'state',
         'country',
+        'zip',
         'gst_number',
         'status',
+        'description',
     ];
 
     protected $appends = [

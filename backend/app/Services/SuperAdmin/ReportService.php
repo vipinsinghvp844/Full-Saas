@@ -78,6 +78,12 @@ class ReportService
             'summary' => [
                 'active' => $metrics['active_subscriptions'],
                 'expired' => $metrics['expired_subscriptions'],
+                'trial' => $metrics['trial_subscriptions'],
+                'paused' => $metrics['paused_subscriptions'],
+                'cancelled' => $metrics['cancelled_subscriptions'],
+                'suspended' => $metrics['suspended_subscriptions'],
+                'monthly_recurring_revenue' => $metrics['monthly_recurring_revenue'],
+                'renewals_this_month' => $metrics['renewals_this_month'],
                 'expiring_soon' => $this->subscriptionRepository->expiringSoon()->count(),
             ],
             'breakdown' => $this->dashboardRepository->subscriptionStatusBreakdown(),

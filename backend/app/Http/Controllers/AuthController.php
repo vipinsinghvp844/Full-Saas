@@ -200,11 +200,11 @@ class AuthController extends ApiController
 
     protected function resolveRedirect(?string $role): string
     {
-        return match ($role) {
-            'Super Admin' => '/super-admin/dashboard',
-            'Gym Admin' => '/gym/dashboard',
-            'Trainer' => '/trainer/dashboard',
-            'Manager', 'Receptionist', 'Accountant' => '/staff/dashboard',
+        return match (strtolower((string) $role)) {
+            'super admin' => '/super-admin/dashboard',
+            'gym admin' => '/gym/dashboard',
+            'trainer' => '/trainer/dashboard',
+            'manager', 'receptionist', 'accountant' => '/staff/dashboard',
             default => '/dashboard',
         };
     }

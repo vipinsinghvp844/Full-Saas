@@ -12,19 +12,34 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tenant_subscriptions', function (Blueprint $table) {
-            // Update status enum to include all subscription states
-            $table->enum('status', ['active', 'expired', 'cancelled', 'suspended', 'paused', 'trial'])->default('active')->change();
-            
-            // Add lifecycle fields
-            $table->date('renewal_date')->nullable()->after('end_date');
-            $table->date('next_billing_date')->nullable()->after('renewal_date');
-            $table->timestamp('grace_period_ends_at')->nullable()->after('next_billing_date');
-            $table->timestamp('paused_at')->nullable()->after('grace_period_ends_at');
-            $table->timestamp('resumed_at')->nullable()->after('paused_at');
-            
-            // Add indexes for performance
-            $table->index(['status', 'end_date']);
-            $table->index(['tenant_id', 'status', 'end_date']);
+            if (Schema::hasColumn('tenant_subscriptions', 'status')) {
+                $table->enum('status', ['active', 'expired', 'cancelled', 'suspended', 'paused', 'trial'])->default('active')->change();
+            }
+
+            if (!Schema::hasColumn('tenant_subscriptions', 'renewal_date')) {
+                $table->date('renewal_date')->nullable()->after('end_date');
+            }
+
+            if (!Schema::hasColumn('tenant_subscriptions', 'next_billing_date')) {
+                $table->date('next_billing_date')->nullable()->after('renewal_date');
+            }
+
+            if (!Schema::hasColumn('tenant_subscriptions', 'grace_period_ends_at')) {
+                $table->timestamp('grace_period_ends_at')->nullable()->after('next_billing_date');
+            }
+
+            if (!Schema::hasColumn('tenant_subscriptions', 'paused_at')) {
+                $table->timestamp('paused_at')->nullable()->after('grace_period_ends_at');
+            }
+
+            if (!Schema::hasColumn('tenant_subscriptions', 'resumed_at')) {
+                $table->timestamp('resumed_at')->nullable()->after('paused_at');
+            }
+
+            if (!Schema::hasColumn('tenant_subscriptions', 'status')) {
+                $table->index(['status', 'end_date']);
+                $table->index(['tenant_id', 'status', 'end_date']);
+            }
         });
     }
 

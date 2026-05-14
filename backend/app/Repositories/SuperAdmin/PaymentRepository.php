@@ -21,6 +21,7 @@ class PaymentRepository
         $search = trim((string) ($filters['search'] ?? ''));
 
         return Payment::query()
+            ->whereNull('member_id')
             ->with(['invoice.tenant:id,name,status', 'invoice.subscription.plan:id,name,plan_type'])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($searchQuery) use ($search) {

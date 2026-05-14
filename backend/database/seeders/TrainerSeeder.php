@@ -2,65 +2,113 @@
 
 namespace Database\Seeders;
 
+use App\Models\Branch;
+use App\Models\Employee;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\Trainer;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class TrainerSeeder extends Seeder
 {
-    protected function getTenant(): Tenant
-    {
-        return Tenant::firstOrCreate(
-            ['slug' => 'power-house-gym'],
-            [
-                'name' => 'Power House Gym',
-                'email' => 'info@powerhousegym.com',
-                'phone' => '9876543210',
-                'address' => '123 Fitness Avenue, City Center',
-                'status' => 'active',
-            ]
-        );
-    }
-
     public function run(): void
     {
-        $tenant = $this->getTenant();
+        $tenant = Tenant::first();
+
+        if (! $tenant) {
+            return;
+        }
+
+        $branch = Branch::firstOrCreate(
+            [
+                'tenant_id' => $tenant->id,
+                'name' => 'Main Branch',
+            ],
+            [
+                'address' => '123 Fitness Avenue, City Center',
+                'phone' => '9876543210',
+            ]
+        );
+
+        $trainerRole = Role::firstOrCreate(
+            [
+                'tenant_id' => $tenant->id,
+                'name' => 'Trainer',
+                'guard_name' => 'web',
+            ],
+            [
+                'tenant_id' => $tenant->id,
+                'name' => 'Trainer',
+                'guard_name' => 'web',
+            ]
+        );
+
+        Role::firstOrCreate(
+            [
+                'tenant_id' => $tenant->id,
+                'name' => 'trainer',
+                'guard_name' => 'web',
+            ],
+            [
+                'tenant_id' => $tenant->id,
+                'name' => 'trainer',
+                'guard_name' => 'web',
+            ]
+        );
 
         $trainers = [
             [
-                'name' => 'Alex Strong',
-                'email' => 'alex.strong@powerhousegym.com',
+                'name' => 'John Trainer',
+                'email' => 'john.trainer@example.com',
                 'specialization' => 'Strength Training',
-                'experience_years' => 5,
-                'certifications' => 'Certified Strength and Conditioning Specialist',
+                'experience' => 5,
+                'certifications' => 'ACE Certified',
+                'bio' => 'Certified strength coach with 5 years of experience.',
+                'phone' => '9812345670',
             ],
             [
-                'name' => 'Sophie Fit',
-                'email' => 'sophie.fit@powerhousegym.com',
+                'name' => 'Alex Fitness Coach',
+                'email' => 'alex.coach@example.com',
                 'specialization' => 'Yoga & Pilates',
-                'experience_years' => 4,
-                'certifications' => 'Registered Yoga Teacher',
-            ],
-            [
-                'name' => 'Noah Flex',
-                'email' => 'noah.flex@powerhousegym.com',
-                'specialization' => 'Functional Training',
-                'experience_years' => 6,
-                'certifications' => 'Functional Movement Systems Certified',
+                'experience' => 4,
+                'certifications' => 'RYT-200',
+                'bio' => 'Helping members achieve flexibility and balance.',
+                'phone' => '9812345671',
             ],
         ];
 
-        foreach ($trainers as $trainerData) {
+        foreach ($trainers as $data) {
             $user = User::updateOrCreate(
-                ['email' => $trainerData['email']],
+                ['email' => $data['email']],
                 [
                     'tenant_id' => $tenant->id,
-                    'name' => $trainerData['name'],
-                    'password' => 'password',
+                    'name' => $data['name'],
+                    'password' => Hash::make('password'),
                 ]
             );
+
+            $employee = Employee::updateOrCreate(
+                [
+                    'tenant_id' => $tenant->id,
+                    'user_id' => $user->id,
+                ],
+                [
+                    'branch_id' => $branch->id,
+                    'role' => 'trainer',
+                    'position' => 'Trainer',
+                    'hire_date' => now()->subMonths(10)->toDateString(),
+                    'salary' => 45000,
+                    'shift' => '9 AM - 6 PM',
+                    'status' => 'active',
+                    'phone' => $data['phone'],
+                ]
+            );
+
+            $user->roles()->syncWithoutDetaching([
+                $trainerRole->id => ['tenant_id' => $tenant->id],
+            ]);
 
             Trainer::updateOrCreate(
                 [
@@ -68,23 +116,17 @@ class TrainerSeeder extends Seeder
                     'user_id' => $user->id,
                 ],
                 [
-                    'specialization' => $trainerData['specialization'],
-                    'experience_years' => $trainerData['experience_years'],
-                    'certifications' => $trainerData['certifications'],
-                    'created_by' => $user->id,
-                    'updated_by' => $user->id,
+                    'employee_id' => $employee->id,
+                    'specialization' => $data['specialization'],
+                    'experience_years' => $data['experience'],
+                    'certifications' => $data['certifications'],
+                    'bio' => $data['bio'],
+                    'phone' => $data['phone'],
+                    'salary' => 45000,
+                    'shift' => '9 AM - 6 PM',
+                    'status' => 'active',
                 ]
             );
-
-            $role = Role::where('tenant_id', $tenant->id)
-                ->where('name', 'Trainer')
-                ->first();
-
-            if ($role) {
-                $user->roles()->syncWithoutDetaching([
-                    $role->id => ['tenant_id' => $tenant->id],
-                ]);
-            }
         }
     }
 }

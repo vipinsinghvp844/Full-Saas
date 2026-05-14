@@ -16,9 +16,10 @@ class GymClass extends Model
         'name',
         'description',
         'category',
-        'max_participants',
-        'duration_minutes',
+        'capacity',
+        'duration',
         'trainer_id',
+        'status',
         'created_by',
         'updated_by',
     ];
@@ -31,5 +32,15 @@ class GymClass extends Model
     public function trainer()
     {
         return $this->belongsTo(Trainer::class);
+    }
+
+    public function schedules()
+    {
+        return $this->hasMany(ClassSchedule::class, 'class_id');
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(ClassBooking::class, 'class_id');
     }
 }

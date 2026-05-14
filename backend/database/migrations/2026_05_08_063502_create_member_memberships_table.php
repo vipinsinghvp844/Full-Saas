@@ -15,13 +15,16 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->onDelete('cascade');
             $table->foreignId('member_id')->constrained('members')->onDelete('cascade');
-            $table->foreignId('membership_plan_id')->constrained('membership_plans')->onDelete('cascade');
+            $table->foreignId('plan_id')->constrained('membership_plans')->onDelete('cascade');
             $table->date('start_date');
             $table->date('end_date');
             $table->enum('status', ['active', 'expired', 'cancelled'])->default('active');
+            $table->enum('payment_status', ['pending', 'paid', 'failed', 'refunded'])->default('paid');
+            $table->decimal('final_amount', 12, 2)->default(0);
             $table->timestamps();
 
             $table->index(['tenant_id', 'member_id', 'status']);
+            $table->index(['tenant_id', 'plan_id']);
         });
     }
 

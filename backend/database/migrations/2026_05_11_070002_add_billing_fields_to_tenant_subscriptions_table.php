@@ -10,12 +10,29 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tenant_subscriptions', function (Blueprint $table) {
-            $table->foreignId('coupon_id')->nullable()->after('plan_id')->constrained('coupons')->nullOnDelete();
-            $table->decimal('price', 10, 2)->default(0)->after('status');
-            $table->decimal('discount_amount', 10, 2)->default(0)->after('price');
-            $table->decimal('final_amount', 10, 2)->default(0)->after('discount_amount');
-            $table->string('payment_method')->default('manual')->after('final_amount');
-            $table->timestamp('cancelled_at')->nullable()->after('payment_method');
+            if (!Schema::hasColumn('tenant_subscriptions', 'coupon_id')) {
+                $table->foreignId('coupon_id')->nullable()->after('plan_id')->constrained('coupons')->nullOnDelete();
+            }
+
+            if (!Schema::hasColumn('tenant_subscriptions', 'price')) {
+                $table->decimal('price', 10, 2)->default(0)->after('status');
+            }
+
+            if (!Schema::hasColumn('tenant_subscriptions', 'discount_amount')) {
+                $table->decimal('discount_amount', 10, 2)->default(0)->after('price');
+            }
+
+            if (!Schema::hasColumn('tenant_subscriptions', 'final_amount')) {
+                $table->decimal('final_amount', 10, 2)->default(0)->after('discount_amount');
+            }
+
+            if (!Schema::hasColumn('tenant_subscriptions', 'payment_method')) {
+                $table->string('payment_method')->default('manual')->after('final_amount');
+            }
+
+            if (!Schema::hasColumn('tenant_subscriptions', 'cancelled_at')) {
+                $table->timestamp('cancelled_at')->nullable()->after('payment_method');
+            }
         });
 
         DB::statement('

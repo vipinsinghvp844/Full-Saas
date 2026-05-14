@@ -9,14 +9,33 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tenants', function (Blueprint $table) {
-            $table->string('logo_path')->nullable()->after('name');
-            $table->foreignId('owner_user_id')->nullable()->after('email')->constrained('users')->nullOnDelete();
-            $table->string('city')->nullable()->after('address');
-            $table->string('state')->nullable()->after('city');
-            $table->string('country')->nullable()->after('state');
-            $table->string('gst_number')->nullable()->after('country');
+            if (!Schema::hasColumn('tenants', 'logo_path')) {
+                $table->string('logo_path')->nullable()->after('name');
+            }
 
-            $table->index(['country', 'state']);
+            if (!Schema::hasColumn('tenants', 'owner_user_id')) {
+                $table->foreignId('owner_user_id')->nullable()->after('email')->constrained('users')->nullOnDelete();
+            }
+
+            if (!Schema::hasColumn('tenants', 'city')) {
+                $table->string('city')->nullable()->after('address');
+            }
+
+            if (!Schema::hasColumn('tenants', 'state')) {
+                $table->string('state')->nullable()->after('city');
+            }
+
+            if (!Schema::hasColumn('tenants', 'country')) {
+                $table->string('country')->nullable()->after('state');
+            }
+
+            if (!Schema::hasColumn('tenants', 'gst_number')) {
+                $table->string('gst_number')->nullable()->after('country');
+            }
+
+            if (!Schema::hasColumn('tenants', 'country') || !Schema::hasColumn('tenants', 'state')) {
+                $table->index(['country', 'state']);
+            }
         });
     }
 

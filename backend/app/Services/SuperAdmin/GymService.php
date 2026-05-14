@@ -209,7 +209,7 @@ class GymService
 
     protected function provisionTenantRoles(Tenant $tenant): void
     {
-        foreach (['Gym Admin', 'Manager', 'Trainer', 'Receptionist', 'Accountant'] as $roleName) {
+        foreach (['Gym Admin', 'Manager', 'Trainer', 'trainer', 'Receptionist', 'Accountant'] as $roleName) {
             Role::updateOrCreate(
                 [
                     'tenant_id' => $tenant->id,

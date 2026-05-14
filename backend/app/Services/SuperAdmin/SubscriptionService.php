@@ -230,16 +230,28 @@ class SubscriptionService
             'tenant_id' => $subscription->tenant_id,
             'subscription_id' => $subscription->id,
             'amount' => $amount,
+            'total_amount' => $amount,
+            'discount' => 0,
+            'final_amount' => $amount,
             'status' => 'paid',
             'due_date' => now()->toDateString(),
         ]);
 
+        $invoice->update([
+            'invoice_number' => sprintf('SAAS-%s-%06d', now()->format('Y'), $invoice->id),
+        ]);
+
         Payment::create([
+            'tenant_id' => $subscription->tenant_id,
             'invoice_id' => $invoice->id,
             'amount' => $amount,
+            'discount' => 0,
+            'final_amount' => $amount,
             'payment_method' => $paymentMethod,
             'transaction_id' => Str::upper(Str::random(12)),
             'status' => 'completed',
+            'payment_status' => 'paid',
+            'paid_at' => now(),
         ]);
     }
 

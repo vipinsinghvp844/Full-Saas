@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             SuperAdminSeeder::class,
             PlatformPlanSeeder::class,
             TenantSeeder::class,
+            TenantSubscriptionSeeder::class,
             GymSettingsSeeder::class,
             EmployeeSeeder::class,
             TrainerSeeder::class,
@@ -24,3 +25,4 @@ class DatabaseSeeder extends Seeder
         ]);
     }
 }
+

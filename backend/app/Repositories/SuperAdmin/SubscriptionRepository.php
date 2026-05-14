@@ -12,7 +12,7 @@ class SubscriptionRepository
     public function syncExpiredStatuses(): void
     {
         TenantSubscription::query()
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'trial', 'paused'])
             ->whereDate('end_date', '<', Carbon::today()->toDateString())
             ->update(['status' => 'expired']);
     }
@@ -67,7 +67,7 @@ class SubscriptionRepository
 
         return TenantSubscription::query()
             ->with(['tenant:id,name', 'plan:id,name'])
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'trial', 'paused'])
             ->whereBetween('end_date', [Carbon::today()->toDateString(), Carbon::today()->addDays($days)->toDateString()])
             ->orderBy('end_date')
             ->get();

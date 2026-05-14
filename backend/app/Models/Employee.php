@@ -12,13 +12,20 @@ class Employee extends Model
     protected $fillable = [
         'tenant_id',
         'user_id',
+        'role',
         'branch_id',
+        'phone',
         'position',
         'hire_date',
         'salary',
+        'shift',
         'status',
         'created_by',
         'updated_by',
+    ];
+
+    protected $casts = [
+        'hire_date' => 'date',
     ];
 
     public function tenant()
@@ -34,5 +41,10 @@ class Employee extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function trainer()
+    {
+        return $this->hasOne(Trainer::class);
     }
 }

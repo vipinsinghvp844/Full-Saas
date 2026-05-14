@@ -28,7 +28,7 @@ class SubscriptionController extends ApiController
     {
         $payload = $this->paginatedData($this->subscriptionRepository->paginate($request->all()), SubscriptionResource::class);
         $payload['filters'] = [
-            'statuses' => ['active', 'expired', 'cancelled'],
+            'statuses' => ['active', 'trial', 'expired', 'paused', 'cancelled', 'suspended'],
             'plans' => PlanResource::collection(PlatformPlan::query()->orderBy('name')->get())->resolve(),
             'gyms' => Tenant::query()->orderBy('name')->get(['id', 'name']),
         ];

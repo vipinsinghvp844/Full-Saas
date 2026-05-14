@@ -9,8 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('coupons', function (Blueprint $table) {
-            $table->enum('status', ['active', 'inactive'])->default('active')->after('used_count');
-            $table->index('status');
+            if (!Schema::hasColumn('coupons', 'status')) {
+                $table->enum('status', ['active', 'inactive'])->default('active')->after('used_count');
+            }
+
+            if (!Schema::hasColumn('coupons', 'status')) {
+                $table->index('status');
+            }
         });
     }
 
