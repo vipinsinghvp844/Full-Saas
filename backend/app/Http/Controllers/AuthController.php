@@ -44,23 +44,74 @@ class AuthController extends ApiController
     public function register(Request $request)
     {
         $data = $request->validate([
+            'gym_name' => ['required', 'string', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-        ]);
+        try {
+            $user = \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
+                $slug = \Illuminate\Support\Str::slug($data['gym_name']);
+                $baseSlug = $slug !== '' ? $slug : \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8));
+                $slug = $baseSlug;
+                $counter = 1;
 
-        $verificationToken = JwtService::createEmailVerificationToken($user);
+                while (Tenant::where('slug', $slug)->exists()) {
+                    $slug = "$baseSlug-$counter";
+                    $counter++;
+                }
 
-        return $this->jsonResponse([
-            'message' => 'Registration successful. Please verify your email.',
-            'verification_token' => $verificationToken,
-        ], 201, $request);
+                $tenant = Tenant::create([
+                    'name' => $data['gym_name'],
+                    'slug' => $slug,
+                    'email' => $data['email'],
+                    'status' => 'active',
+                ]);
+
+                $user = User::create([
+                    'tenant_id' => $tenant->id,
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'password' => Hash::make($data['password']),
+                ]);
+
+                $tenant->update(['owner_user_id' => $user->id]);
+
+                foreach (['Gym Admin', 'Manager', 'Trainer', 'Receptionist', 'Accountant'] as $roleName) {
+                    Role::updateOrCreate(
+                        [
+                            'tenant_id' => $tenant->id,
+                            'name' => $roleName,
+                            'guard_name' => 'web',
+                        ]
+                    );
+                }
+
+                $role = Role::where('tenant_id', $tenant->id)
+                    ->where('name', 'Gym Admin')
+                    ->first();
+
+                if ($role) {
+                    $user->roles()->syncWithoutDetaching([
+                        $role->id => ['tenant_id' => $tenant->id],
+                    ]);
+                }
+
+                return $user;
+            });
+
+            $refreshToken = JwtService::createRefreshToken($user);
+            $payload = $this->buildTokenPayload($user, $refreshToken);
+
+            return $this->jsonResponse(array_merge([
+                'message' => 'Registration successful. Welcome to the platform.',
+            ], $payload), 201, $request);
+
+        } catch (\Throwable $e) {
+            \Log::error('Registration error: ' . $e->getMessage());
+            return $this->jsonResponse(['message' => 'Registration failed: ' . $e->getMessage()], 500, $request);
+        }
     }
 
     public function logout(Request $request)
@@ -209,3 +260,4 @@ class AuthController extends ApiController
         };
     }
 }
+

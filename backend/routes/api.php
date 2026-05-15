@@ -83,8 +83,9 @@ Route::middleware(['jwt', 'auth.custom'])->group(function () {
             Route::get('settings/summary', SettingsController::class);
         });
 
+    // Gym Routes - Require active SaaS subscription
     Route::prefix('gym')
-        ->middleware('role:Gym Admin|Manager|Receptionist|Accountant')
+        ->middleware(['role:Gym Admin|Manager|Receptionist|Accountant', 'subscription'])
         ->group(function () {
             Route::get('dashboard', [GymDashboardController::class, 'index']);
 
@@ -126,7 +127,6 @@ Route::middleware(['jwt', 'auth.custom'])->group(function () {
 
             // Notifications
             Route::get('notifications', [GymNotificationController::class, 'index']);
-            Route::get('notifications/counts', [GymNotificationController::class, 'counts']);
             Route::post('notifications/generate', [GymNotificationController::class, 'generate']);
             Route::put('notifications/read-all', [GymNotificationController::class, 'markAllRead']);
             Route::put('notifications/{id}/read', [GymNotificationController::class, 'markRead']);
@@ -168,17 +168,39 @@ Route::middleware(['jwt', 'auth.custom'])->group(function () {
             Route::post('payroll/{id}/mark-paid', [GymPayrollController::class, 'markPaid']);
             Route::delete('payroll/{id}', [GymPayrollController::class, 'destroy']);
 
-            // Settings & Users
+            // Settings — Profile
             Route::get('settings/profile', [GymSettingsController::class, 'getProfile']);
             Route::put('settings/profile', [GymSettingsController::class, 'updateProfile']);
             Route::post('settings/profile/logo', [GymSettingsController::class, 'uploadLogo']);
-            
+
+            // Settings — Payment Gateway
+            Route::get('settings/payment', [GymSettingsController::class, 'getPaymentSettings']);
+            Route::put('settings/payment', [GymSettingsController::class, 'updatePaymentSettings']);
+
+            // Settings — General KV (Billing, Notifications, Advanced)
             Route::get('settings/kv', [GymSettingsController::class, 'getSettings']);
             Route::put('settings/kv', [GymSettingsController::class, 'updateSettings']);
-            
+
+            // Settings — Users
             Route::get('settings/users', [GymSettingsController::class, 'getUsers']);
             Route::post('settings/users', [GymSettingsController::class, 'createUser']);
             Route::put('settings/users/{id}', [GymSettingsController::class, 'updateUser']);
+            Route::patch('settings/users/{id}/toggle-status', [GymSettingsController::class, 'toggleUserStatus']);
             Route::get('settings/roles', [GymSettingsController::class, 'getRoles']);
         });
+
+    // Gym Routes - Exempt from subscription middleware (so they can actually subscribe)
+    Route::prefix('gym')
+        ->middleware(['role:Gym Admin|Manager|Receptionist|Accountant'])
+        ->group(function () {
+            // Platform Subscriptions
+            Route::get('platform/plans', [\App\Http\Controllers\Gym\PlatformSubscriptionController::class, 'plans']);
+            Route::get('platform/subscription', [\App\Http\Controllers\Gym\PlatformSubscriptionController::class, 'current']);
+            Route::post('platform/subscribe', [\App\Http\Controllers\Gym\PlatformSubscriptionController::class, 'subscribe']);
+            Route::get('notifications/counts', [GymNotificationController::class, 'counts']);
+        });
 });
+
+// Webhooks
+Route::post('webhooks/stripe', [\App\Http\Controllers\Webhooks\StripeWebhookController::class, 'handle']);
+Route::post('webhooks/razorpay', [\App\Http\Controllers\Webhooks\RazorpayWebhookController::class, 'handle']);

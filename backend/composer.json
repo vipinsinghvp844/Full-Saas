@@ -9,7 +9,9 @@
         "php": "^8.3",
         "firebase/php-jwt": "^7.0",
         "laravel/framework": "^13.7",
-        "laravel/tinker": "^3.0"
+        "laravel/tinker": "^3.0",
+        "razorpay/razorpay": "*",
+        "stripe/stripe-php": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

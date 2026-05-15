@@ -21,7 +21,7 @@ class SubscriptionService
     ) {
     }
 
-    public function assignPlan(array $data, User $actor): TenantSubscription
+    public function assignPlan(array $data, ?User $actor = null): TenantSubscription
     {
         return DB::transaction(function () use ($data, $actor) {
             $tenant = Tenant::findOrFail($data['tenant_id']);
@@ -52,24 +52,26 @@ class SubscriptionService
                 'payment_method' => $data['payment_method'] ?? 'manual',
             ]);
 
-            $this->createBillingEntries($subscription, $financials['final_amount'], $data['payment_method'] ?? 'manual');
+            $this->createBillingEntries($subscription, $financials['final_amount'], $data['payment_method'] ?? 'manual', $data['transaction_id'] ?? null);
             $this->incrementCouponUsage($coupon);
 
-            $this->activityLogService->record(
-                $actor,
-                'subscription.assigned',
-                $subscription,
-                "Assigned {$plan->name} to {$tenant->name}",
-                [],
-                $subscription->toArray(),
-                $tenant->id
-            );
+            if ($actor) {
+                $this->activityLogService->record(
+                    $actor,
+                    'subscription.assigned',
+                    $subscription,
+                    "Assigned {$plan->name} to {$tenant->name}",
+                    [],
+                    $subscription->toArray(),
+                    $tenant->id
+                );
+            }
 
             return $subscription->fresh();
         });
     }
 
-    public function renew(TenantSubscription $subscription, array $data, User $actor): TenantSubscription
+    public function renew(TenantSubscription $subscription, array $data, ?User $actor = null): TenantSubscription
     {
         return DB::transaction(function () use ($subscription, $data, $actor) {
             $oldValues = $subscription->toArray();
@@ -91,24 +93,26 @@ class SubscriptionService
                 'cancelled_at' => null,
             ]);
 
-            $this->createBillingEntries($subscription->fresh(), $financials['final_amount'], $data['payment_method'] ?? $subscription->payment_method);
+            $this->createBillingEntries($subscription->fresh(), $financials['final_amount'], $data['payment_method'] ?? $subscription->payment_method, $data['transaction_id'] ?? null);
             $this->incrementCouponUsage($coupon);
 
-            $this->activityLogService->record(
-                $actor,
-                'subscription.renewed',
-                $subscription,
-                "Renewed subscription for {$subscription->tenant->name}",
-                $oldValues,
-                $subscription->fresh()->toArray(),
-                $subscription->tenant_id
-            );
+            if ($actor) {
+                $this->activityLogService->record(
+                    $actor,
+                    'subscription.renewed',
+                    $subscription,
+                    "Renewed subscription for {$subscription->tenant->name}",
+                    $oldValues,
+                    $subscription->fresh()->toArray(),
+                    $subscription->tenant_id
+                );
+            }
 
             return $subscription->fresh();
         });
     }
 
-    public function cancel(TenantSubscription $subscription, array $data, User $actor): TenantSubscription
+    public function cancel(TenantSubscription $subscription, array $data, ?User $actor = null): TenantSubscription
     {
         $oldValues = $subscription->toArray();
 
@@ -117,20 +121,22 @@ class SubscriptionService
             'cancelled_at' => now(),
         ]);
 
-        $this->activityLogService->record(
-            $actor,
-            'subscription.cancelled',
-            $subscription,
-            $data['reason'] ?? "Cancelled subscription for {$subscription->tenant->name}",
-            $oldValues,
-            $subscription->fresh()->toArray(),
-            $subscription->tenant_id
-        );
+        if ($actor) {
+            $this->activityLogService->record(
+                $actor,
+                'subscription.cancelled',
+                $subscription,
+                $data['reason'] ?? "Cancelled subscription for {$subscription->tenant->name}",
+                $oldValues,
+                $subscription->fresh()->toArray(),
+                $subscription->tenant_id
+            );
+        }
 
         return $subscription->fresh();
     }
 
-    public function changePlan(TenantSubscription $subscription, array $data, User $actor): TenantSubscription
+    public function changePlan(TenantSubscription $subscription, array $data, ?User $actor = null): TenantSubscription
     {
         return DB::transaction(function () use ($subscription, $data, $actor) {
             $oldValues = $subscription->toArray();
@@ -153,18 +159,20 @@ class SubscriptionService
                 'cancelled_at' => null,
             ]);
 
-            $this->createBillingEntries($subscription->fresh(), $financials['final_amount'], $data['payment_method'] ?? $subscription->payment_method);
+            $this->createBillingEntries($subscription->fresh(), $financials['final_amount'], $data['payment_method'] ?? $subscription->payment_method, $data['transaction_id'] ?? null);
             $this->incrementCouponUsage($coupon);
 
-            $this->activityLogService->record(
-                $actor,
-                'subscription.plan_changed',
-                $subscription,
-                "Changed plan for {$subscription->tenant->name} to {$plan->name}",
-                $oldValues,
-                $subscription->fresh()->toArray(),
-                $subscription->tenant_id
-            );
+            if ($actor) {
+                $this->activityLogService->record(
+                    $actor,
+                    'subscription.plan_changed',
+                    $subscription,
+                    "Changed plan for {$subscription->tenant->name} to {$plan->name}",
+                    $oldValues,
+                    $subscription->fresh()->toArray(),
+                    $subscription->tenant_id
+                );
+            }
 
             return $subscription->fresh();
         });
@@ -224,7 +232,7 @@ class SubscriptionService
         ];
     }
 
-    protected function createBillingEntries(TenantSubscription $subscription, float $amount, string $paymentMethod): void
+    protected function createBillingEntries(TenantSubscription $subscription, float $amount, string $paymentMethod, ?string $transactionId = null): void
     {
         $invoice = Invoice::create([
             'tenant_id' => $subscription->tenant_id,
@@ -248,7 +256,7 @@ class SubscriptionService
             'discount' => 0,
             'final_amount' => $amount,
             'payment_method' => $paymentMethod,
-            'transaction_id' => Str::upper(Str::random(12)),
+            'transaction_id' => $transactionId ?? Str::upper(Str::random(12)),
             'status' => 'completed',
             'payment_status' => 'paid',
             'paid_at' => now(),
@@ -260,5 +268,44 @@ class SubscriptionService
         if ($coupon) {
             $coupon->increment('used_count');
         }
+    }
+
+    public function activateFromWebhook(int $tenantId, int $planId, string $transactionId, float $amount, string $paymentProvider): ?TenantSubscription
+    {
+        // Idempotency check: see if we already processed this transaction
+        $existingPayment = Payment::whereNull('member_id')
+            ->where('transaction_id', $transactionId)
+            ->first();
+
+        if ($existingPayment) {
+            return null; // Already processed
+        }
+
+        $tenant = Tenant::findOrFail($tenantId);
+        $activeSubscription = $tenant->activeSubscription;
+
+        $data = [
+            'tenant_id' => $tenantId,
+            'plan_id' => $planId,
+            'payment_method' => $paymentProvider,
+            'transaction_id' => $transactionId,
+        ];
+
+        // If they have an active subscription, just renew/change plan
+        if ($activeSubscription && in_array($activeSubscription->status, ['active', 'trial'])) {
+            if ($activeSubscription->plan_id == $planId) {
+                return $this->renew($activeSubscription, $data);
+            } else {
+                return $this->changePlan($activeSubscription, $data);
+            }
+        }
+
+        // If they are expired or have no sub, assign a new one
+        if ($activeSubscription) {
+            // Cancel old one just to be clean
+            $activeSubscription->update(['status' => 'cancelled', 'cancelled_at' => now()]);
+        }
+
+        return $this->assignPlan($data);
     }
 }
