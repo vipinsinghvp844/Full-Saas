@@ -71,4 +71,24 @@ class CouponController extends ApiController
             'message' => 'Coupon deleted successfully.',
         ], 200, $request);
     }
+
+    public function activate(Request $request, Coupon $coupon)
+    {
+        $updated = $this->couponService->activate($coupon, $request->user());
+
+        return $this->jsonResponse([
+            'message' => 'Coupon activated successfully.',
+            'data' => $this->resourceData(new CouponResource($updated)),
+        ], 200, $request);
+    }
+
+    public function deactivate(Request $request, Coupon $coupon)
+    {
+        $updated = $this->couponService->deactivate($coupon, $request->user());
+
+        return $this->jsonResponse([
+            'message' => 'Coupon deactivated successfully.',
+            'data' => $this->resourceData(new CouponResource($updated)),
+        ], 200, $request);
+    }
 }

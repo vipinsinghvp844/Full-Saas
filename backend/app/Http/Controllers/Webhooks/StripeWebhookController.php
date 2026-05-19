@@ -9,17 +9,23 @@ use Illuminate\Support\Facades\Log;
 use Stripe\Webhook;
 use Stripe\Exception\SignatureVerificationException;
 
+use App\Services\SuperAdmin\PlatformSettingsService;
+
 class StripeWebhookController extends ApiController
 {
-    public function __construct(protected SubscriptionService $subscriptionService)
-    {
+    public function __construct(
+        protected SubscriptionService $subscriptionService,
+        protected PlatformSettingsService $settingsService
+    ) {
     }
 
     public function handle(Request $request)
     {
         $payload = $request->getContent();
         $sigHeader = $request->header('Stripe-Signature');
-        $webhookSecret = env('STRIPE_WEBHOOK_SECRET');
+        
+        $settings = $this->settingsService->getAllSettings();
+        $webhookSecret = $settings['payment']['stripe_webhook'] ?? null;
 
         if (empty($webhookSecret) || $webhookSecret === 'whsec_placeholder') {
             Log::warning('Stripe webhook failed: Secret not configured.');
@@ -41,6 +47,7 @@ class StripeWebhookController extends ApiController
             
             $tenantId = $session->client_reference_id ?? $session->metadata->tenant_id ?? null;
             $planId = $session->metadata->plan_id ?? null;
+            $couponCode = $session->metadata->coupon_code ?? null;
             $amount = $session->amount_total / 100; // Stripe uses cents
             $transactionId = $session->payment_intent ?? $session->id;
 
@@ -51,7 +58,8 @@ class StripeWebhookController extends ApiController
                         (int) $planId, 
                         $transactionId, 
                         (float) $amount, 
-                        'stripe'
+                        'stripe',
+                        $couponCode
                     );
                     Log::info("Stripe Webhook: Processed plan {$planId} for tenant {$tenantId}");
                 } catch (\Exception $e) {

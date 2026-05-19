@@ -33,6 +33,7 @@ class GymResource extends JsonResource
                 'branches' => $this->branches_count ?? 0,
                 'subscriptions' => $this->subscriptions_count ?? 0,
             ],
+            'platform_revenue' => (float) ($this->platform_revenue ?? 0),
             'active_subscription' => $this->whenLoaded('activeSubscription', function () {
                 if (! $this->activeSubscription) {
                     return null;

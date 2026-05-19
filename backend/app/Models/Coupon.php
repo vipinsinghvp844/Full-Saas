@@ -14,6 +14,7 @@ class Coupon extends Model
         'code',
         'discount_type',
         'discount_value',
+        'max_discount',
         'valid_from',
         'valid_to',
         'usage_limit',
@@ -23,6 +24,7 @@ class Coupon extends Model
 
     protected $casts = [
         'discount_value' => 'decimal:2',
+        'max_discount' => 'decimal:2',
         'valid_from' => 'date',
         'valid_to' => 'date',
     ];

@@ -25,6 +25,37 @@ class Tenant extends Model
         'gst_number',
         'status',
         'description',
+        'latitude',
+        'longitude',
+        'gallery_images',
+        'services',
+        'website_enabled',
+        'website_template',
+        'seo_title',
+        'seo_description',
+        'seo_keywords',
+        'custom_domain',
+        'custom_domain_verified',
+        'opening_hours',
+        'social_links',
+        'banner_image',
+        'trainers_data',
+        'pricing_plans',
+        'testimonials_data',
+    ];
+
+    protected $casts = [
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
+        'gallery_images' => 'array',
+        'services' => 'array',
+        'website_enabled' => 'boolean',
+        'custom_domain_verified' => 'boolean',
+        'opening_hours' => 'array',
+        'social_links' => 'array',
+        'trainers_data' => 'array',
+        'pricing_plans' => 'array',
+        'testimonials_data' => 'array',
     ];
 
     protected $appends = [

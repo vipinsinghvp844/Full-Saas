@@ -32,6 +32,14 @@ Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middl
 Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 Route::post('email/verify', [AuthController::class, 'verifyEmail'])->middleware('throttle:5,1');
 
+Route::get('cms/content', [\App\Http\Controllers\PublicCmsController::class, 'index']);
+
+// Public Gym Listing & Profile Pages
+Route::get('gyms', [\App\Http\Controllers\PublicGymController::class, 'index']);
+Route::get('gyms/{slug}', [\App\Http\Controllers\PublicGymController::class, 'show']);
+Route::post('gyms/{slug}/feedback', [\App\Http\Controllers\PublicGymController::class, 'submitFeedback']);
+Route::post('gyms/{slug}/subscribe', [\App\Http\Controllers\PublicGymController::class, 'subscribePlan']);
+
 Route::middleware(['jwt', 'auth.custom'])->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('me', [ProfileController::class, 'me']);
@@ -72,15 +80,30 @@ Route::middleware(['jwt', 'auth.custom'])->group(function () {
             Route::get('coupons/{coupon}', [CouponController::class, 'show']);
             Route::put('coupons/{coupon}', [CouponController::class, 'update']);
             Route::delete('coupons/{coupon}', [CouponController::class, 'destroy']);
+            Route::post('coupons/{coupon}/activate', [CouponController::class, 'activate']);
+            Route::post('coupons/{coupon}/deactivate', [CouponController::class, 'deactivate']);
 
             Route::get('payments', [PaymentController::class, 'index']);
+            Route::get('payments/{payment}', [PaymentController::class, 'show']);
 
             Route::get('reports/overview', [ReportController::class, 'overview']);
             Route::get('reports/revenue', [ReportController::class, 'revenue']);
             Route::get('reports/gym-growth', [ReportController::class, 'gymGrowth']);
             Route::get('reports/subscriptions', [ReportController::class, 'subscriptions']);
+            Route::get('reports/coupons', [ReportController::class, 'coupons']);
+            Route::get('reports/payments', [ReportController::class, 'payments']);
+            Route::get('reports/growth', [ReportController::class, 'growth']);
 
-            Route::get('settings/summary', SettingsController::class);
+            Route::get('settings', [SettingsController::class, 'index']);
+            Route::put('settings/{group}', [SettingsController::class, 'update']);
+            Route::post('settings/upload-media', [SettingsController::class, 'uploadMedia']);
+
+            // Support Tickets for Super Admin
+            Route::get('support/tickets', [\App\Http\Controllers\SuperAdmin\SupportTicketController::class, 'index']);
+            Route::get('support/tickets/{id}', [\App\Http\Controllers\SuperAdmin\SupportTicketController::class, 'show']);
+            Route::post('support/tickets/{id}/reply', [\App\Http\Controllers\SuperAdmin\SupportTicketController::class, 'reply']);
+            Route::put('support/tickets/{id}/status', [\App\Http\Controllers\SuperAdmin\SupportTicketController::class, 'updateStatus']);
+            Route::post('support/upload', [\App\Http\Controllers\SuperAdmin\SupportTicketController::class, 'uploadAttachment']);
         });
 
     // Gym Routes - Require active SaaS subscription
@@ -147,6 +170,9 @@ Route::middleware(['jwt', 'auth.custom'])->group(function () {
             Route::post('classes/{class}/book', [GymClassController::class, 'book']);
             Route::put('classes/bookings/{bookingId}/status', [GymClassController::class, 'updateBookingStatus']);
             Route::get('membership-plans', [GymMembershipPlanController::class, 'index']);
+            Route::post('membership-plans', [GymMembershipPlanController::class, 'store']);
+            Route::put('membership-plans/{id}', [GymMembershipPlanController::class, 'update']);
+            Route::delete('membership-plans/{id}', [GymMembershipPlanController::class, 'destroy']);
 
             // Expenses
             Route::get('expenses/dashboard', [GymExpenseController::class, 'dashboard']);
@@ -196,8 +222,18 @@ Route::middleware(['jwt', 'auth.custom'])->group(function () {
             // Platform Subscriptions
             Route::get('platform/plans', [\App\Http\Controllers\Gym\PlatformSubscriptionController::class, 'plans']);
             Route::get('platform/subscription', [\App\Http\Controllers\Gym\PlatformSubscriptionController::class, 'current']);
+            Route::post('platform/coupon/validate', [\App\Http\Controllers\Gym\PlatformSubscriptionController::class, 'validateCoupon']);
             Route::post('platform/subscribe', [\App\Http\Controllers\Gym\PlatformSubscriptionController::class, 'subscribe']);
+            Route::post('platform/stripe/confirm', [\App\Http\Controllers\Gym\PlatformSubscriptionController::class, 'confirmStripeCheckout']);
+            Route::post('platform/razorpay/confirm', [\App\Http\Controllers\Gym\PlatformSubscriptionController::class, 'confirmRazorpayPayment']);
             Route::get('notifications/counts', [GymNotificationController::class, 'counts']);
+
+            // Support Tickets for Gym Admin
+            Route::get('support/tickets', [\App\Http\Controllers\Gym\SupportTicketController::class, 'index']);
+            Route::post('support/tickets', [\App\Http\Controllers\Gym\SupportTicketController::class, 'store']);
+            Route::get('support/tickets/{id}', [\App\Http\Controllers\Gym\SupportTicketController::class, 'show']);
+            Route::post('support/tickets/{id}/reply', [\App\Http\Controllers\Gym\SupportTicketController::class, 'reply']);
+            Route::post('support/upload', [\App\Http\Controllers\Gym\SupportTicketController::class, 'uploadAttachment']);
         });
 });
 

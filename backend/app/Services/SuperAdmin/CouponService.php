@@ -20,6 +20,7 @@ class CouponService
                 'code' => strtoupper($data['code']),
                 'discount_type' => $data['discount_type'],
                 'discount_value' => $data['discount_value'],
+                'max_discount' => $data['max_discount'] ?? null,
                 'valid_from' => $data['valid_from'] ?? now()->toDateString(),
                 'valid_to' => $data['valid_to'],
                 'usage_limit' => $data['usage_limit'] ?? null,
@@ -51,6 +52,7 @@ class CouponService
                 'code' => strtoupper($data['code']),
                 'discount_type' => $data['discount_type'],
                 'discount_value' => $data['discount_value'],
+                'max_discount' => $data['max_discount'] ?? null,
                 'valid_from' => $data['valid_from'] ?? $coupon->valid_from?->toDateString() ?? now()->toDateString(),
                 'valid_to' => $data['valid_to'],
                 'usage_limit' => $data['usage_limit'] ?? null,
@@ -87,5 +89,33 @@ class CouponService
             [],
             $tenantId
         );
+    }
+
+    public function activate(Coupon $coupon, User $actor): Coupon
+    {
+        return $this->setStatus($coupon, 'active', $actor);
+    }
+
+    public function deactivate(Coupon $coupon, User $actor): Coupon
+    {
+        return $this->setStatus($coupon, 'inactive', $actor);
+    }
+
+    protected function setStatus(Coupon $coupon, string $status, User $actor): Coupon
+    {
+        $oldValues = $coupon->toArray();
+        $coupon->update(['status' => $status]);
+
+        $this->activityLogService->record(
+            $actor,
+            "coupon.{$status}",
+            $coupon,
+            ucfirst($status) . " coupon {$coupon->code}",
+            $oldValues,
+            $coupon->fresh()->toArray(),
+            $coupon->tenant_id
+        );
+
+        return $coupon->fresh('tenant:id,name');
     }
 }

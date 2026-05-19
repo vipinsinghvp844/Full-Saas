@@ -17,6 +17,13 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
+    protected $appends = ['role'];
+
+    public function getRoleAttribute()
+    {
+        return $this->roles->first()?->name;
+    }
+
     protected function casts(): array
     {
         return [

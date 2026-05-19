@@ -7,17 +7,23 @@ use App\Services\SuperAdmin\SubscriptionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
+use App\Services\SuperAdmin\PlatformSettingsService;
+
 class RazorpayWebhookController extends ApiController
 {
-    public function __construct(protected SubscriptionService $subscriptionService)
-    {
+    public function __construct(
+        protected SubscriptionService $subscriptionService,
+        protected PlatformSettingsService $settingsService
+    ) {
     }
 
     public function handle(Request $request)
     {
         $payload = $request->getContent();
         $signature = $request->header('X-Razorpay-Signature');
-        $webhookSecret = env('RAZORPAY_WEBHOOK_SECRET');
+        
+        $settings = $this->settingsService->getAllSettings();
+        $webhookSecret = $settings['payment']['razorpay_webhook'] ?? null;
 
         if (empty($webhookSecret) || $webhookSecret === 'webhook_placeholder') {
             Log::warning('Razorpay webhook failed: Secret not configured.');
@@ -37,6 +43,7 @@ class RazorpayWebhookController extends ApiController
             
             $tenantId = $payment['notes']['tenant_id'] ?? null;
             $planId = $payment['notes']['plan_id'] ?? null;
+            $couponCode = $payment['notes']['coupon_code'] ?? null;
             $amount = $payment['amount'] / 100; // Razorpay uses paise
             $transactionId = $payment['id'];
 
@@ -47,7 +54,8 @@ class RazorpayWebhookController extends ApiController
                         (int) $planId, 
                         $transactionId, 
                         (float) $amount, 
-                        'razorpay'
+                        'razorpay',
+                        $couponCode
                     );
                     Log::info("Razorpay Webhook: Processed plan {$planId} for tenant {$tenantId}");
                 } catch (\Exception $e) {

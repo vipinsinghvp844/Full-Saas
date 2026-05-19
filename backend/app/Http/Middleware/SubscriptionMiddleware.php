@@ -27,9 +27,11 @@ class SubscriptionMiddleware
         // For gym users, check their tenant's active subscription
         if ($user && $user->tenant_id) {
             $activeSubscription = TenantSubscription::where('tenant_id', $user->tenant_id)
-                ->whereIn('status', ['active', 'trial'])
                 ->where(function ($query) {
-                    $query->where('end_date', '>', now())
+                    $query->where(function ($q) {
+                        $q->whereIn('status', ['active', 'trial'])
+                            ->whereDate('end_date', '>=', now()->toDateString());
+                    })
                           ->orWhere(function ($q) {
                               $q->where('status', 'expired')
                                 ->where('grace_period_ends_at', '>', now());
