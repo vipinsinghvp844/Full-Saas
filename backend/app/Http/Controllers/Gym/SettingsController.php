@@ -71,6 +71,8 @@ class SettingsController extends ApiController
             'pricing_plans'          => ['nullable', 'array'],
             'gallery_images'         => ['nullable', 'array'],
             'services'               => ['nullable', 'array'],
+            'classes_data'           => ['nullable', 'array'],
+            'blogs_data'             => ['nullable', 'array'],
             'latitude'               => ['nullable', 'numeric'],
             'longitude'              => ['nullable', 'numeric'],
         ]);

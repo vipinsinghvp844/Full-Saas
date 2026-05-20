@@ -117,6 +117,8 @@ class PublicGymController extends ApiController
                 'trainers_data' => $gym->trainers_data ?? [],
                 'pricing_plans' => $pricingPlans,
                 'testimonials_data' => $gym->testimonials_data ?? [],
+                'classes_data' => $gym->classes_data ?? [],
+                'blogs_data' => $gym->blogs_data ?? [],
             ]
         ]);
     }
