@@ -1,0 +1,10 @@
+# Local patch / one-off scripts (do not commit)
+/patch_*.js
+/fix_*.js
+/sync_trainers.php
+/patch_trainer.php
+/composer-setup.php
+
+# Env & uploads
+backend/.env
+backend/public/uploads/

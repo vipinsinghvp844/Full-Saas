@@ -23,6 +23,7 @@ class Member extends Model
         'emergency_contact',
         'joining_date',
         'status',
+        'profile_picture',
         'created_by',
         'updated_by',
     ];

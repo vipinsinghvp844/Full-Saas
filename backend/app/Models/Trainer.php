@@ -17,6 +17,7 @@ class Trainer extends Model
         'experience_years',
         'certifications',
         'bio',
+        'avatar',
 
         // Extended operational fields (added by gym admin builds)
         'phone',

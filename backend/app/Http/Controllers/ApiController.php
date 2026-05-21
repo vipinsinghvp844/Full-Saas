@@ -11,10 +11,13 @@ class ApiController extends Controller
 {
     protected function getCorsHeaders(Request $request): array
     {
-        $allowedOrigins = [
-            'http://localhost:3000',
-            'http://127.0.0.1:3000',
-        ];
+        $allowedOrigins = array_values(array_filter(array_merge(
+            [
+                'http://localhost:3000',
+                'http://127.0.0.1:3000',
+            ],
+            array_map('trim', explode(',', (string) env('FRONTEND_URL', '')))
+        )));
 
         $origin = $request->headers->get('Origin');
         $headers = [];

@@ -88,10 +88,19 @@ class MemberController extends ApiController
             'address' => ['nullable', 'string'],
             'joining_date' => ['required', 'date'],
             'status' => ['required', 'in:active,inactive,suspended'],
-            'membership_plan_id' => ['nullable', 'integer', 'exists:membership_plans,id'],
-            'assigned_trainer_id' => ['nullable', 'integer', 'exists:trainers,id'],
+            'membership_plan_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('membership_plans', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+            ],
+            'assigned_trainer_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('trainers', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+            ],
             'payment_status' => ['nullable', 'in:pending,paid,failed,refunded'],
             'final_amount' => ['nullable', 'numeric', 'min:0'],
+            'profile_picture' => ['nullable', 'string', 'max:500'],
         ]);
 
         $plan = $this->tenantPlan($tenantId, $data['membership_plan_id'] ?? null);
@@ -116,6 +125,7 @@ class MemberController extends ApiController
                 'address' => $data['address'] ?? null,
                 'joining_date' => $data['joining_date'],
                 'status' => $data['status'],
+                'profile_picture' => $data['profile_picture'] ?? null,
                 'created_by' => $request->user()->id,
                 'updated_by' => $request->user()->id,
             ]);
@@ -163,10 +173,19 @@ class MemberController extends ApiController
             'address' => ['nullable', 'string'],
             'joining_date' => ['nullable', 'date'],
             'status' => ['nullable', 'in:active,inactive,suspended'],
-            'membership_plan_id' => ['nullable', 'integer', 'exists:membership_plans,id'],
-            'assigned_trainer_id' => ['nullable', 'integer', 'exists:trainers,id'],
+            'membership_plan_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('membership_plans', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+            ],
+            'assigned_trainer_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('trainers', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+            ],
             'payment_status' => ['nullable', 'in:pending,paid,failed,refunded'],
             'final_amount' => ['nullable', 'numeric', 'min:0'],
+            'profile_picture' => ['nullable', 'string', 'max:500'],
         ]);
 
         $plan = $this->tenantPlan($tenantId, $data['membership_plan_id'] ?? null);
@@ -198,6 +217,7 @@ class MemberController extends ApiController
                 'address' => array_key_exists('address', $data) ? $data['address'] : $memberModel->address,
                 'joining_date' => $data['joining_date'] ?? $memberModel->joining_date,
                 'status' => $data['status'] ?? $memberModel->status,
+                'profile_picture' => array_key_exists('profile_picture', $data) ? $data['profile_picture'] : $memberModel->profile_picture,
                 'updated_by' => $request->user()->id,
             ]);
 

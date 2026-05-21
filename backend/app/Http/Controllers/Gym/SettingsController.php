@@ -75,6 +75,8 @@ class SettingsController extends ApiController
             'blogs_data'             => ['nullable', 'array'],
             'latitude'               => ['nullable', 'numeric'],
             'longitude'              => ['nullable', 'numeric'],
+            'header_data'            => ['nullable', 'array'],
+            'footer_data'            => ['nullable', 'array'],
         ]);
 
         $tenant->update($data);
@@ -423,4 +425,23 @@ class SettingsController extends ApiController
             'is_active' => (bool) $user->is_active,
         ]);
     }
+
+    public function uploadMedia(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'image', 'max:5120'], // 5MB max
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->store('cms', 'public');
+        
+        $url = asset('storage/' . $path);
+
+        return $this->jsonResponse([
+            'message' => 'File uploaded successfully',
+            'url' => $url,
+            'path' => $path
+        ]);
+    }
 }
+

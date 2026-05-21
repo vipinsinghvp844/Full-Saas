@@ -85,6 +85,25 @@ class PublicGymController extends ApiController
 
         $pricingPlans = !empty($dbPlans) ? $dbPlans : ($gym->pricing_plans ?? []);
 
+        $dbClasses = \App\Models\GymClass::where('tenant_id', $gym->id)
+            ->with(['trainer.user'])
+            ->get()
+            ->map(fn($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'description' => $c->description,
+                'category' => $c->category ?? 'General',
+                'capacity' => $c->capacity,
+                'duration' => $c->duration ? ($c->duration . ' mins') : '60 mins',
+                'intensity' => $c->intensity ?? 'Medium',
+                'image' => $c->image ?? 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80',
+                'trainer' => $c->trainer?->user?->name ?? 'Unassigned'
+            ])
+            ->values()
+            ->toArray();
+
+        $classesData = !empty($dbClasses) ? $dbClasses : ($gym->classes_data ?? []);
+
         return $this->jsonResponse([
             'message' => 'Gym retrieved successfully',
             'data' => [
@@ -115,10 +134,27 @@ class PublicGymController extends ApiController
                 'social_links' => $gym->social_links ?? [],
                 'banner_image' => $gym->banner_image,
                 'trainers_data' => $gym->trainers_data ?? [],
+                'trainers' => \App\Models\Trainer::where('tenant_id', $gym->id)
+                    ->where('status', 'active')
+                    ->with('user')
+                    ->get()
+                    ->map(fn($t) => [
+                        'id'             => $t->id,
+                        'name'           => $t->user?->name,
+                        'email'          => $t->user?->email,
+                        'specialization' => $t->specialization,
+                        'experience_years' => $t->experience_years,
+                        'avatar'         => $t->avatar,
+                        'bio'            => $t->bio,
+                    ])
+                    ->values()
+                    ->toArray(),
                 'pricing_plans' => $pricingPlans,
                 'testimonials_data' => $gym->testimonials_data ?? [],
-                'classes_data' => $gym->classes_data ?? [],
+                'classes_data' => $classesData,
                 'blogs_data' => $gym->blogs_data ?? [],
+                'header_data' => $gym->header_data ?? null,
+                'footer_data' => $gym->footer_data ?? null,
             ]
         ]);
     }

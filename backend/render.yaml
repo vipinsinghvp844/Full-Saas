@@ -1,0 +1,16 @@
+# Render Blueprint (optional) — secrets Dashboard mein set karo, yahan mat likho
+services:
+  - type: web
+    name: fullsaas-api
+    runtime: php
+    rootDir: backend
+    buildCommand: composer install --no-dev --optimize-autoloader && php artisan config:cache
+    startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: LOG_CHANNEL
+        value: stderr
+      # DB_* , APP_KEY , JWT_SECRET , FRONTEND_URL → Render Dashboard se manually

@@ -19,6 +19,8 @@ class TrainerResource extends JsonResource
             'experience_years' => $this->experience_years,
             'certifications' => $this->certifications,
 
+            'avatar' => $this->avatar,
+            'bio' => $this->bio,
             'phone' => $this->phone,
             'salary' => $this->salary,
             'shift' => $this->shift,

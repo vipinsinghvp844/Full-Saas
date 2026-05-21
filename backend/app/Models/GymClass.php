@@ -20,6 +20,8 @@ class GymClass extends Model
         'duration',
         'trainer_id',
         'status',
+        'intensity',
+        'image',
         'created_by',
         'updated_by',
     ];

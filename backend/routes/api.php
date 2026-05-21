@@ -37,8 +37,8 @@ Route::get('cms/content', [\App\Http\Controllers\PublicCmsController::class, 'in
 // Public Gym Listing & Profile Pages
 Route::get('gyms', [\App\Http\Controllers\PublicGymController::class, 'index']);
 Route::get('gyms/{slug}', [\App\Http\Controllers\PublicGymController::class, 'show']);
-Route::post('gyms/{slug}/feedback', [\App\Http\Controllers\PublicGymController::class, 'submitFeedback']);
-Route::post('gyms/{slug}/subscribe', [\App\Http\Controllers\PublicGymController::class, 'subscribePlan']);
+Route::post('gyms/{slug}/feedback', [\App\Http\Controllers\PublicGymController::class, 'submitFeedback'])->middleware('throttle:10,1');
+Route::post('gyms/{slug}/subscribe', [\App\Http\Controllers\PublicGymController::class, 'subscribePlan'])->middleware('throttle:5,1');
 
 Route::middleware(['jwt', 'auth.custom'])->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
@@ -167,6 +167,8 @@ Route::middleware(['jwt', 'auth.custom'])->group(function () {
             Route::get('classes', [GymClassController::class, 'index']);
             Route::post('classes', [GymClassController::class, 'store']);
             Route::get('classes/{class}', [GymClassController::class, 'show']);
+            Route::put('classes/{id}', [GymClassController::class, 'update']);
+            Route::delete('classes/{id}', [GymClassController::class, 'destroy']);
             Route::post('classes/{class}/book', [GymClassController::class, 'book']);
             Route::put('classes/bookings/{bookingId}/status', [GymClassController::class, 'updateBookingStatus']);
             Route::get('membership-plans', [GymMembershipPlanController::class, 'index']);
@@ -198,6 +200,7 @@ Route::middleware(['jwt', 'auth.custom'])->group(function () {
             Route::get('settings/profile', [GymSettingsController::class, 'getProfile']);
             Route::put('settings/profile', [GymSettingsController::class, 'updateProfile']);
             Route::post('settings/profile/logo', [GymSettingsController::class, 'uploadLogo']);
+            Route::post('settings/upload-media', [GymSettingsController::class, 'uploadMedia']);
 
             // Settings — Payment Gateway
             Route::get('settings/payment', [GymSettingsController::class, 'getPaymentSettings']);

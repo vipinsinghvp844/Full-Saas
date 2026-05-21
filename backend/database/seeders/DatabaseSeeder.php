@@ -6,23 +6,19 @@ use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
+    /**
+     * Fresh demo dataset: 10 gyms, each with staff, trainers, members,
+     * memberships, invoices/payments, classes, attendance, and expenses.
+     *
+     * Run: php artisan migrate:fresh --seed
+     */
     public function run(): void
     {
         $this->call([
-            RolesSeeder::class,
-            PermissionsSeeder::class,
-            SuperAdminSeeder::class,
             PlatformPlanSeeder::class,
-            TenantSeeder::class,
             TenantSubscriptionSeeder::class,
-            GymSettingsSeeder::class,
-            EmployeeSeeder::class,
-            TrainerSeeder::class,
-            MemberSeeder::class,
-            ClassSeeder::class,
-            InventorySeeder::class,
-            ExpenseSeeder::class,
+            PlatformSuperAdminSeeder::class,
+            DemoGymDataSeeder::class,
         ]);
     }
 }
-

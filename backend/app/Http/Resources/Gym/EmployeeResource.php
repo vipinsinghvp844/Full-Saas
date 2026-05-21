@@ -32,6 +32,7 @@ class EmployeeResource extends JsonResource
                 'phone' => $this->branch->phone,
             ] : null,
             'position' => $this->position,
+            'avatar' => $this->avatar,
             'hire_date' => optional($this->hire_date)->toDateString(),
             'salary' => $this->salary,
             'shift' => $this->shift,

@@ -230,8 +230,9 @@ class AuthController extends ApiController
 
     protected function buildTokenPayload(User $user, string $refreshToken): array
     {
+        $user->loadMissing('roles');
         $accessToken = JwtService::generateAccessToken($user);
-        $role = $user->roles()->pluck('name')->first();
+        $role = $this->resolvePrimaryRole($user);
 
         return [
             'access_token' => $accessToken,
@@ -247,6 +248,23 @@ class AuthController extends ApiController
             ],
             'redirect_to' => $this->resolveRedirect($role),
         ];
+    }
+
+    protected function resolvePrimaryRole(User $user): ?string
+    {
+        $roles = $user->roles->pluck('name');
+
+        if ($user->tenant_id === null) {
+            $platformRole = $roles->first(
+                fn (string $name) => strtolower($name) === 'super admin'
+            );
+
+            if ($platformRole) {
+                return $platformRole;
+            }
+        }
+
+        return $roles->first();
     }
 
     protected function resolveRedirect(?string $role): string

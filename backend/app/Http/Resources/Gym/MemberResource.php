@@ -28,6 +28,7 @@ class MemberResource extends JsonResource
             'emergency_contact' => $this->emergency_contact,
             'joining_date' => optional($this->joining_date)->toDateString(),
             'status' => $this->status,
+            'profile_picture' => $this->profile_picture,
             'membership_plan_id' => $activePlan?->id,
             'membership_plan' => $activePlan ? new MembershipPlanResource($activePlan) : null,
             'active_membership' => $activeMembership ? $this->membershipPayload($activeMembership) : null,

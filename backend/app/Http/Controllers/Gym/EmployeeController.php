@@ -11,6 +11,7 @@ use App\Models\Trainer;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class EmployeeController extends ApiController
@@ -81,6 +82,7 @@ class EmployeeController extends ApiController
             'salary' => ['nullable', 'numeric', 'min:0'],
             'shift' => ['nullable', 'string', 'max:255'],
             'hire_date' => ['required', 'date'],
+            'avatar' => ['nullable', 'string', 'max:2048'],
             'branch_id' => ['required', 'integer', 'exists:branches,id'],
             'role' => ['required', 'string', Rule::in($this->validRoleInputs())],
             'specialization' => ['nullable', 'string', 'max:255'],
@@ -104,7 +106,7 @@ class EmployeeController extends ApiController
             'tenant_id' => $tenantId,
             'name' => $data['name'],
             'email' => $data['email'],
-            'password' => Hash::make('password'), // Default password
+            'password' => Hash::make(Str::random(24)),
         ]);
 
         // Create employee record
@@ -116,6 +118,7 @@ class EmployeeController extends ApiController
             'phone' => $data['phone'] ?? null,
             'position' => $data['position'],
             'hire_date' => $data['hire_date'],
+            'avatar' => $data['avatar'] ?? null,
             'salary' => $data['salary'] ?? null,
             'shift' => $data['shift'] ?? null,
             'status' => $data['status'],
@@ -162,6 +165,7 @@ class EmployeeController extends ApiController
             'salary' => ['nullable', 'numeric', 'min:0'],
             'shift' => ['nullable', 'string', 'max:255'],
             'hire_date' => ['nullable', 'date'],
+            'avatar' => ['nullable', 'string', 'max:2048'],
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'role' => ['nullable', 'string', Rule::in($this->validRoleInputs())],
             'specialization' => ['nullable', 'string', 'max:255'],
@@ -207,6 +211,7 @@ class EmployeeController extends ApiController
             'phone' => $data['phone'] ?? $employeeModel->phone,
             'position' => $data['position'] ?? $employeeModel->position,
             'hire_date' => $data['hire_date'] ?? $employeeModel->hire_date,
+            'avatar' => array_key_exists('avatar', $data) ? $data['avatar'] : $employeeModel->avatar,
             'salary' => $data['salary'] ?? $employeeModel->salary,
             'shift' => $data['shift'] ?? $employeeModel->shift,
             'branch_id' => $data['branch_id'] ?? $employeeModel->branch_id,
@@ -278,6 +283,7 @@ class EmployeeController extends ApiController
             ],
             [
                 'employee_id' => $employee->id,
+                'avatar' => array_key_exists('avatar', $data) ? $data['avatar'] : $employee->avatar,
                 'phone' => array_key_exists('phone', $data) ? $data['phone'] : $employee->phone,
                 'specialization' => array_key_exists('specialization', $data) ? $data['specialization'] : $employee->trainer?->specialization,
                 'experience_years' => array_key_exists('experience_years', $data) ? $data['experience_years'] : $employee->trainer?->experience_years,

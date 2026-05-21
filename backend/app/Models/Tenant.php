@@ -44,6 +44,8 @@ class Tenant extends Model
         'testimonials_data',
         'classes_data',
         'blogs_data',
+        'header_data',
+        'footer_data',
     ];
 
     protected $casts = [
@@ -60,6 +62,8 @@ class Tenant extends Model
         'testimonials_data' => 'array',
         'classes_data' => 'array',
         'blogs_data' => 'array',
+        'header_data' => 'array',
+        'footer_data' => 'array',
     ];
 
     protected $appends = [

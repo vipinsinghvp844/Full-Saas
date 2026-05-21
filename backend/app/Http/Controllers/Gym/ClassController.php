@@ -7,6 +7,7 @@ use App\Models\GymClass;
 use App\Models\ClassBooking;
 use App\Services\Gym\ClassService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Exception;
 
 class ClassController extends ApiController
@@ -33,20 +34,27 @@ class ClassController extends ApiController
 
     public function store(Request $request)
     {
+        $tenantId = $request->user()->tenant_id;
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'category' => 'nullable|string',
             'capacity' => 'nullable|integer|min:1',
             'duration' => 'nullable|integer|min:1',
-            'trainer_id' => 'nullable|exists:trainers,id',
+            'intensity' => 'nullable|string|in:Low,Medium,High',
+            'image' => 'nullable|string|max:2048',
+            'trainer_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('trainers', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+            ],
             'schedules' => 'required|array',
             'schedules.*.day_of_week' => 'required|string|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
             'schedules.*.start_time' => 'required|date_format:H:i',
             'schedules.*.end_time' => 'required|date_format:H:i|after:schedules.*.start_time',
         ]);
 
-        $tenantId = $request->user()->tenant_id;
         $userId = $request->user()->id;
 
         $gymClass = $this->classService->createClass(
@@ -57,6 +65,43 @@ class ClassController extends ApiController
         );
 
         return $this->jsonResponse(['message' => 'Class created successfully', 'data' => $gymClass]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $tenantId = $request->user()->tenant_id;
+        $userId = $request->user()->id;
+
+        $gymClass = GymClass::where('tenant_id', $tenantId)->findOrFail($id);
+
+        $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string',
+            'category' => 'nullable|string',
+            'capacity' => 'nullable|integer|min:1',
+            'duration' => 'nullable|integer|min:1',
+            'intensity' => 'nullable|string|in:Low,Medium,High',
+            'image' => 'nullable|string|max:2048',
+            'trainer_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('trainers', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+            ],
+            'schedules' => 'sometimes|array|min:1',
+            'schedules.*.day_of_week' => 'required_with:schedules|string|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
+            'schedules.*.start_time' => 'required_with:schedules|date_format:H:i',
+            'schedules.*.end_time' => 'required_with:schedules|date_format:H:i|after:schedules.*.start_time',
+        ]);
+
+        $gymClass = $this->classService->updateClass(
+            $gymClass,
+            $request->except('schedules'),
+            $request->has('schedules') ? $request->input('schedules') : null,
+            $tenantId,
+            $userId
+        );
+
+        return $this->jsonResponse(['message' => 'Class updated successfully', 'data' => $gymClass]);
     }
 
     public function show(Request $request, $id)
@@ -113,5 +158,16 @@ class ClassController extends ApiController
         } catch (Exception $e) {
             return $this->jsonResponse(['error' => $e->getMessage()], 422);
         }
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        $tenantId = $request->user()->tenant_id;
+        $gymClass = GymClass::where('tenant_id', $tenantId)->findOrFail($id);
+        
+        // Deleting class will cascade delete schedules and bookings
+        $gymClass->delete();
+
+        return $this->jsonResponse(['message' => 'Class deleted successfully']);
     }
 }

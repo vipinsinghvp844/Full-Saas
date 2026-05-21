@@ -17,6 +17,7 @@ class Employee extends Model
         'phone',
         'position',
         'hire_date',
+        'avatar',
         'salary',
         'shift',
         'status',

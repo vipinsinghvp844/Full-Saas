@@ -39,6 +39,35 @@ class ClassService
     }
 
     /**
+     * Update class fields and optionally replace weekly schedules.
+     */
+    public function updateClass(GymClass $gymClass, array $classData, ?array $schedules, int $tenantId, int $userId)
+    {
+        return DB::transaction(function () use ($gymClass, $classData, $schedules, $tenantId, $userId) {
+            unset($classData['tenant_id'], $classData['created_by'], $classData['schedules']);
+            $classData['updated_by'] = $userId;
+
+            $gymClass->update($classData);
+
+            if ($schedules !== null) {
+                $gymClass->schedules()->where('tenant_id', $tenantId)->delete();
+
+                foreach ($schedules as $schedule) {
+                    $gymClass->schedules()->create([
+                        'tenant_id' => $tenantId,
+                        'day_of_week' => $schedule['day_of_week'],
+                        'start_time' => $schedule['start_time'],
+                        'end_time' => $schedule['end_time'],
+                        'room' => $schedule['room'] ?? null,
+                    ]);
+                }
+            }
+
+            return $gymClass->load(['trainer.user', 'schedules']);
+        });
+    }
+
+    /**
      * Book a member into a specific class instance.
      */
     public function bookClass($classId, $scheduleId, $memberId, $bookingDate, $tenantId)
