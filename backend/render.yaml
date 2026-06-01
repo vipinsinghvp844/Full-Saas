@@ -1,16 +1,51 @@
-# Render Blueprint (optional) — secrets Dashboard mein set karo, yahan mat likho
 services:
   - type: web
-    name: fullsaas-api
-    runtime: php
-    rootDir: backend
-    buildCommand: composer install --no-dev --optimize-autoloader && php artisan config:cache
-    startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
+    name: fitnexa-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Port that nginx listens on inside the container
+    port: 8080
+    # Health check path
+    healthCheckPath: /health
     envVars:
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
-        value: false
+        value: "false"
       - key: LOG_CHANNEL
         value: stderr
-      # DB_* , APP_KEY , JWT_SECRET , FRONTEND_URL → Render Dashboard se manually
+      - key: LOG_LEVEL
+        value: error
+      # ── Database (PostgreSQL on Render) ─────────────────────────
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_URL
+        value: postgresql://fitnexa_user:CS945xaTwxhjeTnJyhxtZBL7K86optI0@dpg-d87dehkm0tmc739pu4b0-a.ohio-postgres.render.com/fitnexa
+      - key: DB_HOST
+        value: dpg-d87dehkm0tmc739pu4b0-a.ohio-postgres.render.com
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_DATABASE
+        value: fitnexa
+      - key: DB_USERNAME
+        value: fitnexa_user
+      - key: DB_PASSWORD
+        value: CS945xaTwxhjeTnJyhxtZBL7K86optI0
+      - key: DB_SSLMODE
+        value: require
+      # ── App Keys (set via Render Dashboard for security) ────────
+      # APP_KEY       → Render Dashboard > Environment
+      # JWT_SECRET    → Render Dashboard > Environment
+      # ── Frontend CORS ───────────────────────────────────────────
+      - key: FRONTEND_URL
+        value: https://fitstackv.vercel.app
+      # ── Cache / Session / Queue ─────────────────────────────────
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: FILESYSTEM_DISK
+        value: local

@@ -35,11 +35,20 @@ return new class extends Migration
             }
         });
 
-        DB::statement('
-            UPDATE tenant_subscriptions ts
-            INNER JOIN platform_plans pp ON pp.id = ts.plan_id
-            SET ts.price = pp.price, ts.discount_amount = 0, ts.final_amount = pp.price
-        ');
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('
+                UPDATE tenant_subscriptions
+                SET price = pp.price, discount_amount = 0, final_amount = pp.price
+                FROM platform_plans pp
+                WHERE pp.id = tenant_subscriptions.plan_id
+            ');
+        } else {
+            DB::statement('
+                UPDATE tenant_subscriptions ts
+                INNER JOIN platform_plans pp ON pp.id = ts.plan_id
+                SET ts.price = pp.price, ts.discount_amount = 0, ts.final_amount = pp.price
+            ');
+        }
     }
 
     public function down(): void

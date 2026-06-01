@@ -374,6 +374,20 @@ class SubscriptionService
             $activeSubscription->update(['status' => 'cancelled', 'cancelled_at' => now()]);
         }
 
-        return $this->assignPlan($data);
+        $subscription = $this->assignPlan($data);
+        
+        // Notify Super Admin
+        \App\Models\Notification::create([
+            'tenant_id' => null,
+            'user_id' => null,
+            'title' => 'New Subscription Received',
+            'message' => "Gym '{$tenant->name}' has successfully subscribed to plan #{$planId} via {$paymentProvider}.",
+            'type' => 'success',
+            'category' => 'system',
+            'channel' => 'in_app',
+            'priority' => 'high',
+        ]);
+
+        return $subscription;
     }
 }

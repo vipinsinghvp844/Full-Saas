@@ -92,13 +92,33 @@ class SettingsController extends ApiController
             ],
             'security' => [
                 'session_timeout_minutes' => ['required', 'integer', 'min:1'],
-                'max_login_attempts' => ['required', 'integer', 'min:1'],
+                'max_login_attempts'      => ['required', 'integer', 'min:1'],
+                'lockout_minutes'         => ['required', 'integer', 'min:1'],
                 'require_strong_password' => ['required', 'boolean'],
             ],
             'notifications' => [
-                'email_enabled' => ['required', 'boolean'],
-                'sms_enabled' => ['required', 'boolean'],
-                'webhook_url' => ['nullable', 'string', 'url', 'max:500'],
+                // Email master toggle
+                'email_enabled'      => ['required', 'boolean'],
+                'email_provider'     => ['nullable', 'string', 'in:gmail,sendgrid,mailgun,smtp'],
+                // Generic SMTP (used for gmail + custom smtp)
+                'smtp_host'          => ['nullable', 'string', 'max:255'],
+                'smtp_port'          => ['nullable', 'integer', 'min:1', 'max:65535'],
+                'smtp_username'      => ['nullable', 'string', 'max:255'],
+                'smtp_password'      => ['nullable', 'string', 'max:500'],
+                'smtp_from_address'  => ['nullable', 'email', 'max:255'],
+                'smtp_from_name'     => ['nullable', 'string', 'max:255'],
+                'smtp_encryption'    => ['nullable', 'string', 'in:tls,ssl,none'],
+                // Sendgrid
+                'sendgrid_api_key'   => ['nullable', 'string', 'max:500'],
+                // Mailgun
+                'mailgun_api_key'    => ['nullable', 'string', 'max:500'],
+                'mailgun_domain'     => ['nullable', 'string', 'max:255'],
+                // SMS
+                'sms_enabled'        => ['required', 'boolean'],
+                // Webhook
+                'webhook_url'        => ['nullable', 'string', 'url', 'max:500'],
+                'webhook_format'     => ['nullable', 'string', 'in:json,form,slack'],
+                'webhook_secret'     => ['nullable', 'string', 'max:255'],
             ],
             'features' => [
                 'enable_classes' => ['required', 'boolean'],

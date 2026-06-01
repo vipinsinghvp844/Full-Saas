@@ -117,7 +117,7 @@ class PlatformSubscriptionController extends ApiController
                 'payment_method_types' => ['card'],
                 'line_items' => [[
                     'price_data' => [
-                        'currency' => 'usd', // Or INR, based on your platform config
+                        'currency' => strtolower($settings['billing']['currency'] ?? 'usd'),
                         'product_data' => [
                             'name' => $plan->name,
                             'description' => $couponCode

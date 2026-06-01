@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LoginAttempt;
 use App\Models\PasswordResetToken;
 use App\Models\RefreshToken;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\JwtService;
+use App\Services\SuperAdmin\PlatformSettingsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,19 +19,71 @@ use Illuminate\Support\Facades\Str;
 
 class AuthController extends ApiController
 {
+    public function __construct(protected PlatformSettingsService $settingsService)
+    {
+    }
+
     public function login(Request $request)
     {
         try {
             $data = $request->validate([
-                'email' => ['required', 'email'],
+                'email'    => ['required', 'email'],
                 'password' => ['required', 'string'],
             ]);
 
-            $user = User::with('roles')->where('email', $data['email'])->first();
+            $email = strtolower(trim($data['email']));
+            $ip    = $request->ip();
+
+            // --- Check lockout ---
+            if (LoginAttempt::isLocked($email)) {
+                $seconds = LoginAttempt::lockoutRemainingSeconds($email);
+                $minutes = (int) ceil($seconds / 60);
+                return $this->jsonResponse([
+                    'message' => "Account temporarily locked due to too many failed attempts. Try again in {$minutes} minute(s).",
+                    'error'   => 'account_locked',
+                    'retry_after_seconds' => abs($seconds),
+                ], 429, $request);
+            }
+
+            $user = User::with('roles')->where('email', $email)->first();
 
             if (! $user || ! Hash::check($data['password'], $user->password)) {
-                return $this->jsonResponse(['message' => 'The provided credentials are incorrect.'], 401, $request);
+                // Record failed attempt
+                LoginAttempt::create([
+                    'email'        => $email,
+                    'ip_address'   => $ip,
+                    'successful'   => false,
+                    'attempted_at' => Carbon::now(),
+                ]);
+
+                $security = $this->settingsService->getAllSettings()['security'] ?? [];
+                $maxAttempts  = (int) ($security['max_login_attempts'] ?? 5);
+                $lockoutMins  = (int) ($security['lockout_minutes'] ?? 15);
+                $recentFailed = LoginAttempt::recentFailedCount($email);
+
+                if ($recentFailed >= $maxAttempts) {
+                    LoginAttempt::lockAccount($email, $lockoutMins);
+                    return $this->jsonResponse([
+                        'message' => "Too many failed attempts. Account locked for {$lockoutMins} minute(s).",
+                        'error'   => 'account_locked',
+                        'retry_after_seconds' => $lockoutMins * 60,
+                    ], 429, $request);
+                }
+
+                $remaining = $maxAttempts - $recentFailed;
+                return $this->jsonResponse([
+                    'message' => "The provided credentials are incorrect. {$remaining} attempt(s) remaining before lockout.",
+                ], 401, $request);
             }
+
+            // Successful login — clear any failed attempts
+            LoginAttempt::clearLock($email);
+            LoginAttempt::create([
+                'email'        => $email,
+                'ip_address'   => $ip,
+                'successful'   => true,
+                'attempted_at' => Carbon::now(),
+            ]);
 
             $refreshToken = JwtService::createRefreshToken($user);
             $payload = $this->buildTokenPayload($user, $refreshToken);
@@ -43,15 +97,32 @@ class AuthController extends ApiController
 
     public function register(Request $request)
     {
+        // --- Check allow_signup setting ---
+        $tenantSettings = $this->settingsService->getAllSettings()['tenant'] ?? [];
+        $allowSignup    = (bool) ($tenantSettings['allow_signup'] ?? true);
+        $autoApprove    = (bool) ($tenantSettings['auto_approve'] ?? true);
+
+        if (! $allowSignup) {
+            return $this->jsonResponse([
+                'message' => 'Public registrations are currently closed. Please contact support.',
+            ], 403, $request);
+        }
+
         $data = $request->validate([
             'gym_name' => ['required', 'string', 'max:255'],
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone'    => ['nullable', 'string', 'max:50'],
+            'address'  => ['nullable', 'string', 'max:500'],
+            'city'     => ['nullable', 'string', 'max:255'],
+            'state'    => ['nullable', 'string', 'max:255'],
+            'country'  => ['nullable', 'string', 'max:255'],
+            'zip'      => ['nullable', 'string', 'max:50'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
         try {
-            $user = \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
+            $user = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $autoApprove) {
                 $slug = \Illuminate\Support\Str::slug($data['gym_name']);
                 $baseSlug = $slug !== '' ? $slug : \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8));
                 $slug = $baseSlug;
@@ -63,10 +134,16 @@ class AuthController extends ApiController
                 }
 
                 $tenant = Tenant::create([
-                    'name' => $data['gym_name'],
-                    'slug' => $slug,
-                    'email' => $data['email'],
-                    'status' => 'active',
+                    'name'    => $data['gym_name'],
+                    'slug'    => $slug,
+                    'email'   => $data['email'],
+                    'phone'   => $data['phone'] ?? null,
+                    'address' => $data['address'] ?? null,
+                    'city'    => $data['city'] ?? null,
+                    'state'   => $data['state'] ?? null,
+                    'country' => $data['country'] ?? null,
+                    'zip'     => $data['zip'] ?? null,
+                    'status'  => $autoApprove ? 'active' : 'pending',
                 ]);
 
                 $user = User::create([
@@ -245,6 +322,10 @@ class AuthController extends ApiController
                 'email' => $user->email,
                 'tenant_id' => $user->tenant_id,
                 'roles' => $user->roles->pluck('name')->toArray(),
+                'tenant' => $user->tenant ? [
+                    'name' => $user->tenant->name,
+                    'logo_url' => $user->tenant->logo_url,
+                ] : null,
             ],
             'redirect_to' => $this->resolveRedirect($role),
         ];

@@ -30,6 +30,17 @@ class JwtService
 
     public static function accessTtl(): int
     {
+        try {
+            /** @var \App\Services\SuperAdmin\PlatformSettingsService $svc */
+            $svc = app(\App\Services\SuperAdmin\PlatformSettingsService::class);
+            $minutes = (int) ($svc->getAllSettings()['security']['session_timeout_minutes'] ?? 0);
+            if ($minutes > 0) {
+                return $minutes * 60;
+            }
+        } catch (\Throwable) {
+            // Fallback silently
+        }
+
         return (int) env('JWT_TTL', 3600);
     }
 

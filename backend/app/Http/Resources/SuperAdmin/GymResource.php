@@ -41,6 +41,7 @@ class GymResource extends JsonResource
 
                 return [
                     'id' => $this->activeSubscription->id,
+                    'plan_id' => $this->activeSubscription->plan_id,
                     'plan_name' => $this->activeSubscription->plan?->name,
                     'plan_type' => $this->activeSubscription->plan?->plan_type,
                     'status' => $this->activeSubscription->status,

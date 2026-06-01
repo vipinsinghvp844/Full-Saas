@@ -12,7 +12,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE employees MODIFY COLUMN status ENUM('active', 'inactive', 'on_leave', 'terminated') DEFAULT 'active'");
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("ALTER TABLE employees DROP CONSTRAINT IF EXISTS employees_status_check");
+            DB::statement("ALTER TABLE employees ADD CONSTRAINT employees_status_check CHECK (status::text = ANY (ARRAY['active'::text, 'inactive'::text, 'on_leave'::text, 'terminated'::text]))");
+        } else {
+            DB::statement("ALTER TABLE employees MODIFY COLUMN status ENUM('active', 'inactive', 'on_leave', 'terminated') DEFAULT 'active'");
+        }
     }
 
     /**
@@ -20,6 +25,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("ALTER TABLE employees MODIFY COLUMN status ENUM('active', 'inactive', 'terminated') DEFAULT 'active'");
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("ALTER TABLE employees DROP CONSTRAINT IF EXISTS employees_status_check");
+            DB::statement("ALTER TABLE employees ADD CONSTRAINT employees_status_check CHECK (status::text = ANY (ARRAY['active'::text, 'inactive'::text, 'terminated'::text]))");
+        } else {
+            DB::statement("ALTER TABLE employees MODIFY COLUMN status ENUM('active', 'inactive', 'terminated') DEFAULT 'active'");
+        }
     }
 };

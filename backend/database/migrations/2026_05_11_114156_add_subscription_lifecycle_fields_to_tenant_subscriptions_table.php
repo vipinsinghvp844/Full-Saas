@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tenant_subscriptions', function (Blueprint $table) {
-            if (Schema::hasColumn('tenant_subscriptions', 'status')) {
+            if (Schema::hasColumn('tenant_subscriptions', 'status') && DB::getDriverName() !== 'pgsql') {
                 $table->enum('status', ['active', 'expired', 'cancelled', 'suspended', 'paused', 'trial'])->default('active')->change();
             }
 
@@ -41,6 +41,11 @@ return new class extends Migration
                 $table->index(['tenant_id', 'status', 'end_date']);
             }
         });
+
+        if (Schema::hasColumn('tenant_subscriptions', 'status') && DB::getDriverName() === 'pgsql') {
+            DB::statement("ALTER TABLE tenant_subscriptions DROP CONSTRAINT IF EXISTS tenant_subscriptions_status_check");
+            DB::statement("ALTER TABLE tenant_subscriptions ADD CONSTRAINT tenant_subscriptions_status_check CHECK (status::text = ANY (ARRAY['active'::text, 'expired'::text, 'cancelled'::text, 'suspended'::text, 'paused'::text, 'trial'::text]))");
+        }
     }
 
     /**
@@ -54,8 +59,15 @@ return new class extends Migration
             
             $table->dropColumn(['renewal_date', 'next_billing_date', 'grace_period_ends_at', 'paused_at', 'resumed_at']);
             
-            // Revert status enum
-            $table->enum('status', ['active', 'expired', 'cancelled'])->default('active')->change();
+            // Revert status enum for non-pgsql
+            if (DB::getDriverName() !== 'pgsql') {
+                $table->enum('status', ['active', 'expired', 'cancelled'])->default('active')->change();
+            }
         });
+
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("ALTER TABLE tenant_subscriptions DROP CONSTRAINT IF EXISTS tenant_subscriptions_status_check");
+            DB::statement("ALTER TABLE tenant_subscriptions ADD CONSTRAINT tenant_subscriptions_status_check CHECK (status::text = ANY (ARRAY['active'::text, 'expired'::text, 'cancelled'::text]))");
+        }
     }
 };

@@ -22,6 +22,10 @@ class ProfileController extends ApiController
                 'tenant_id' => $user->tenant_id,
                 'roles' => $user->roles->pluck('name')->toArray(),
                 'email_verified_at' => $user->email_verified_at,
+                'tenant' => $user->tenant ? [
+                    'name' => $user->tenant->name,
+                    'logo_url' => $user->tenant->logo_url,
+                ] : null,
             ],
         ], 200, $request);
     }

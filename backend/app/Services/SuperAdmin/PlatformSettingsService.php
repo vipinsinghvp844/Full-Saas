@@ -50,12 +50,31 @@ class PlatformSettingsService
             'security' => [
                 'session_timeout_minutes' => 120,
                 'max_login_attempts' => 5,
+                'lockout_minutes' => 15,
                 'require_strong_password' => true,
             ],
             'notifications' => [
-                'email_enabled' => true,
+                // Email
+                'email_enabled' => false,
+                'email_provider' => 'gmail', // gmail | sendgrid | mailgun | smtp
+                'smtp_host' => '',
+                'smtp_port' => 587,
+                'smtp_username' => '',
+                'smtp_password' => '',
+                'smtp_from_address' => '',
+                'smtp_from_name' => '',
+                'smtp_encryption' => 'tls', // tls | ssl | none
+                // Sendgrid
+                'sendgrid_api_key' => '',
+                // Mailgun
+                'mailgun_api_key' => '',
+                'mailgun_domain' => '',
+                // SMS (future)
                 'sms_enabled' => false,
+                // Webhook
                 'webhook_url' => '',
+                'webhook_format' => 'json', // json | form | slack
+                'webhook_secret' => '',
             ],
             'features' => [
                 'enable_classes' => true,

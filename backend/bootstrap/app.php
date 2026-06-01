@@ -2,7 +2,9 @@
 
 use App\Http\Middleware\AuthMiddleware;
 use App\Http\Middleware\CorsMiddleware;
+use App\Http\Middleware\FeatureFlagMiddleware;
 use App\Http\Middleware\JwtMiddleware;
+use App\Http\Middleware\MaintenanceModeMiddleware;
 use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SubscriptionMiddleware;
@@ -23,11 +25,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         
         $middleware->alias([
-            'jwt' => JwtMiddleware::class,
+            'jwt'         => JwtMiddleware::class,
             'auth.custom' => AuthMiddleware::class,
-            'role' => RoleMiddleware::class,
-            'permission' => PermissionMiddleware::class,
-            'subscription' => SubscriptionMiddleware::class,
+            'role'        => RoleMiddleware::class,
+            'permission'  => PermissionMiddleware::class,
+            'subscription'=> SubscriptionMiddleware::class,
+            'maintenance' => MaintenanceModeMiddleware::class,
+            'feature'     => FeatureFlagMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
